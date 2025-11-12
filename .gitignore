@@ -1,0 +1,16 @@
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+.conda/
+
+
+# ignore  executable files
+build/
+dist/
+*.zip
+
+*vscode/
+
+*cache*/
