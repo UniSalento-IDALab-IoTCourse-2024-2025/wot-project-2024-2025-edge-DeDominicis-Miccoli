@@ -1,0 +1,4 @@
+{
+  "shell_port": "/dev/ttyACM0",
+  "data_port": "/dev/ttyACM1"
+}

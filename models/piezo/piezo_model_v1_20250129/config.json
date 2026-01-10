@@ -1,0 +1,5 @@
+{
+  "name": "PIEZO Anomaly Detector",
+  "version": "1.0",
+  "description": "Modello base per rilevamento anomalie segnale PIEZO"
+}

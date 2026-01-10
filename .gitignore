@@ -1,6 +1,19 @@
 # Ignore Python bytecode
 __pycache__/
 *.pyc
+*.pyo
+*.log
+*.db
+*.sqlite3
+.DS_Store
+.idea/
+venv/
+var/iit_data/data_storage/
+var/iit_data/anomaly_logs/
+system.log
+*.swp
+*.swo
+auth_db.py
 
 # Ignore virtual environments
 .conda/

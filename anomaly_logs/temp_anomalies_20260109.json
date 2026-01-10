@@ -1,0 +1,232 @@
+[
+  {
+    "timestamp": "2026-01-09T15:39:49.884251",
+    "date": "2026-01-09",
+    "time": "15:39:49",
+    "anomaly_type": "hypothermia",
+    "temperature": 17.71,
+    "threshold": 35.0,
+    "duration_readings": 24,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T15:48:12.951243",
+    "date": "2026-01-09",
+    "time": "15:48:12",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T15:59:43.829517",
+    "date": "2026-01-09",
+    "time": "15:59:43",
+    "anomaly_type": "hypothermia",
+    "temperature": 17.72,
+    "threshold": 35.0,
+    "duration_readings": 7,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T17:33:10.811778",
+    "date": "2026-01-09",
+    "time": "17:33:10",
+    "anomaly_type": "hypothermia",
+    "temperature": 16.83,
+    "threshold": 35.0,
+    "duration_readings": 18,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T17:34:38.950398",
+    "date": "2026-01-09",
+    "time": "17:34:38",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T17:58:22.608055",
+    "date": "2026-01-09",
+    "time": "17:58:22",
+    "anomaly_type": "hypothermia",
+    "temperature": 16.89,
+    "threshold": 35.0,
+    "duration_readings": 9,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T18:16:42.924849",
+    "date": "2026-01-09",
+    "time": "18:16:42",
+    "anomaly_type": "hypothermia",
+    "temperature": 16.96,
+    "threshold": 35.0,
+    "duration_readings": 6,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T18:18:42.692202",
+    "date": "2026-01-09",
+    "time": "18:18:42",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T18:25:22.994420",
+    "date": "2026-01-09",
+    "time": "18:25:22",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T18:55:05.672902",
+    "date": "2026-01-09",
+    "time": "18:55:05",
+    "anomaly_type": "hypothermia",
+    "temperature": 16.96,
+    "threshold": 35.0,
+    "duration_readings": 15,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T18:59:53.388208",
+    "date": "2026-01-09",
+    "time": "18:59:53",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T19:00:01.284920",
+    "date": "2026-01-09",
+    "time": "19:00:01",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T19:02:03.888914",
+    "date": "2026-01-09",
+    "time": "19:02:03",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T19:10:40.395299",
+    "date": "2026-01-09",
+    "time": "19:10:40",
+    "anomaly_type": "hypothermia",
+    "temperature": 16.74,
+    "threshold": 35.0,
+    "duration_readings": 7,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T19:05:12.829243",
+    "date": "2026-01-09",
+    "time": "19:05:12",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T19:05:23.127856",
+    "date": "2026-01-09",
+    "time": "19:05:23",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T19:08:16.075578",
+    "date": "2026-01-09",
+    "time": "19:08:16",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T22:37:55.065748",
+    "date": "2026-01-09",
+    "time": "22:37:55",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T22:40:11.331205",
+    "date": "2026-01-09",
+    "time": "22:40:11",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T22:43:46.721361",
+    "date": "2026-01-09",
+    "time": "22:43:46",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T22:48:03.615504",
+    "date": "2026-01-09",
+    "time": "22:48:03",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T22:48:11.170072",
+    "date": "2026-01-09",
+    "time": "22:48:11",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-09T22:48:11.215972",
+    "date": "2026-01-09",
+    "time": "22:48:11",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  }
+]

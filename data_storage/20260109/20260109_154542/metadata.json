@@ -1,0 +1,17 @@
+{
+  "session_id": "20260109_154542",
+  "start_time": "2026-01-09T15:45:42.106336",
+  "end_time": "2026-01-09T15:59:44.765105",
+  "status": "completed",
+  "signals": [
+    "ECG",
+    "ADC",
+    "TEMP"
+  ],
+  "total_samples": {
+    "ECG": 28000,
+    "ADC": 28000,
+    "TEMP": 700
+  },
+  "last_update": "2026-01-09T15:59:44.765105"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "ECG Anomaly Detector",
+  "version": "1.0",
+  "description": "Modello base per rilevamento anomalie ECG con autoencoder"
+}

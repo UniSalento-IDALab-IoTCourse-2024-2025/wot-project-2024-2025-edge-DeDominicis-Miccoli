@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2026-01-05T13:10:19.171587",
+    "date": "2026-01-05",
+    "time": "13:10:19",
+    "anomaly_type": "hypothermia",
+    "temperature": 23.14,
+    "threshold": 35.0,
+    "duration_readings": 4,
+    "severity": "severe"
+  }
+]

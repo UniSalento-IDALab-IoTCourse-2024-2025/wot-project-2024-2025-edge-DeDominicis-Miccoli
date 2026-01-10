@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Monitoraggio Parametri T-Shirt</title>
+    
+    <!-- Librerie esterne -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- CSS della dashboard -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anomalies.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/debug.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/models.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user_management.css') }}">
+    <style>
+        .user-info-bar { position: fixed; top: 0; right: 0; left: 260px; height: 60px; background: var(--card-bg); border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: flex-end; padding: 0 2rem; z-index: 100; gap: 1.5rem; }
+        .user-info { display: flex; align-items: center; gap: 0.75rem; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #3b82f6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; }
+        .user-details { display: flex; flex-direction: column; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-role { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; }
+        .btn-logout { padding: 0.5rem 1.25rem; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px; color: #ef4444; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+        .btn-logout:hover { background: #ef4444; color: white; }
+        .main-content { margin-top: 60px !important; }
+        .user-management-view { display: none; padding: 2rem; }
+        .user-management-view.active { display: block !important; }
+        
+        /* MODAL RESET CSS */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex !important;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            opacity: 1 !important;  /* FIX: FORZA OPACITY A 1 */
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ef4444;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .modal-body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        .btn-modal {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-modal-cancel {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        .btn-modal-cancel:hover {
+            background: var(--card-border);
+        }
+        .btn-modal-confirm {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-modal-confirm:hover {
+            background: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-info-bar">
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">U</div>
+            <div class="user-details">
+                <div class="user-name" id="userName">Nome Utente</div>
+                <div class="user-role" id="userRole">Ruolo</div>
+            </div>
+        </div>
+        <button class="btn-logout" onclick="logout()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+        </button>
+    </div>
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+            </div>
+            <div class="sidebar-title">IIT Dashboard</div>
+        </div>
+
+        <!-- STATUS INDICATORS IN SIDEBAR -->
+        <div class="sidebar-status">
+            <div id="deviceStatus" class="status-indicator status-disconnected">
+                <span class="status-dot"></span>
+                <span>Disconnected</span>
+            </div>
+            <div id="acquisitionStatus" class="status-indicator status-idle">
+                <span class="status-dot"></span>
+                <span>Idle</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="sidebar-item active" onclick="showRealtimeView(); return false;" data-view="realtime">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                <span>Real-time</span>
+            </a>
+
+            <a href="#" class="sidebar-item" onclick="showHistoryView(); return false;" data-view="history">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Dati Storici</span>
+            </a>
+
+            <a href="#" class="sidebar-item" onclick="showAnomaliesView(); return false;" data-view="anomalies">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>Anomalie</span>
+            </a>
+
+            <div class="sidebar-divider"></div>
+
+            <!-- EXPERT MODE TOGGLE -->
+            <div class="sidebar-item-toggle" id="expertModeSection" style="display: none;">
+                <div class="sidebar-item-toggle-content">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6"/>
+                        <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"/>
+                        <path d="M1 12h6m6 0h6"/>
+                        <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24"/>
+                    </svg>
+                    <span>Modalità Esperta</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="expertModeToggle" onchange="toggleExpertMode()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- EXPERT MODE SUBMENU (Hidden by default) -->
+            <div class="sidebar-submenu" id="expertSubmenu">
+                <a href="#" class="sidebar-subitem" id="menuModels" style="display: none;" onclick="showModelsView(); return false;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <span>Visualizza Modelli</span>
+                </a>
+                <a href="#" class="sidebar-subitem" id="menuSimulate" style="display: none;" onclick="showSimulateAnomaly(); return false;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span>Simula Anomalia</span>
+                </a>
+                <a href="#" class="sidebar-subitem" id="menuDebug" style="display: none;" onclick="showDebugMode(); return false;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="8" y="6" width="8" height="14" rx="1"/>
+                        <path d="M9 18h6"/>
+                        <path d="M10 22v-2a2 2 0 0 1 4 0v2"/>
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <line x1="9" y1="2" x2="9" y2="6"/>
+                        <line x1="15" y1="2" x2="15" y2="6"/>
+                    </svg>
+                    <span>Modalità Debug</span>
+                </a>
+                <a href="#" class="sidebar-subitem" id="menuUsers" style="display: none;" onclick="showUserManagement(); return false;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span>Gestione Utenti</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="#" class="sidebar-settings" onclick="showSettings(); return false;" data-view="settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M1 12h6m6 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/>
+                </svg>
+                <span>Impostazioni</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-content">
+
+    <!-- VISTA TEMPO REALE -->
+    <div id="realtimeView" class="realtime-view active">
+        <div class="dashboard-container">
+
+            <!-- Pannello di controllo -->
+            <div class="control-panel">
+                <h4>Acquisition Control</h4>
+                <div class="d-flex gap-3">
+                    <button id="btnStart" class="btn-control btn-start">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Start Acquisition
+                    </button>
+                    <button id="btnStop" class="btn-control btn-stop" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="6" width="12" height="12"/>
+                        </svg>
+                        Stop Acquisition
+                    </button>
+                    <button id="btnReset" class="btn-control btn-reset" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                            <path d="M21 3v5h-5"/>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                            <path d="M3 21v-5h5"/>
+                        </svg>
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistiche -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Current Temperature</div>
+                    <div class="stat-value">
+                        <span id="tempValue">--</span>
+                        <span class="stat-unit">°C</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grafici -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                        ECG Signal
+                    </div>
+                    <div class="chart-info">
+                        <span class="chart-badge">250 Hz</span>
+                        <span id="ecgDataPoints">0 points</span>
+                    </div>
+                </div>
+                <div id="ecgChart" style="height: 350px;"></div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                        ADC Channels
+                    </div>
+                    <div class="chart-info">
+                        <span class="chart-badge">250 Hz</span>
+                        <span id="adcDataPoints">0 points</span>
+                    </div>
+                </div>
+                <div id="adcChart" style="height: 350px;"></div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                        </svg>
+                        Temperature Trend
+                    </div>
+                    <div class="chart-info">
+                        <span class="chart-badge">Every 2 min</span>
+                        <span id="tempDataPoints">0 points</span>
+                    </div>
+                </div>
+                <div id="tempChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA STORICO -->
+    <div id="historyView" class="history-view">
+        <div class="dashboard-container">
+            <button class="back-button" onclick="showHomeMenu()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Torna al Menu
+            </button>
+
+            <!-- Pannello filtri -->
+            <div class="filter-panel">
+                <h4>Seleziona Sessione Storica</h4>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label class="form-label">Data</label>
+                        <select id="dateSelect" class="form-select">
+                            <option value="">Caricamento...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Segnale</label>
+                        <select id="signalSelect" class="form-select">
+                            <option value="ECG">ECG</option>
+                            <option value="ADC">ADC</option>
+                            <option value="TEMP">Temperatura</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="btnLoadHistory" class="btn-load" onclick="loadHistoricalData()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Carica Dati
+                        </button>
+                    </div>
+                </div>
+
+                <div id="sessionsList" class="session-list" style="display: none;"></div>
+            </div>
+
+            <div id="historyStatsGrid" class="stats-grid" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-label">Session ID</div>
+                    <div class="stat-value" style="font-size: 1rem;">
+                        <span id="histSessionId">--</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Data Points</div>
+                    <div class="stat-value">
+                        <span id="histDataPoints">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Start Time</div>
+                    <div class="stat-value" style="font-size: 1rem;">
+                        <span id="histStartTime">--</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">End Time</div>
+                    <div class="stat-value" style="font-size: 1rem;">
+                        <span id="histEndTime">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="historyChartsContainer" style="display: none;">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                            </svg>
+                            <span id="historyChartTitle">Historical Data</span>
+                        </div>
+                        <div class="chart-info">
+                            <span id="historyChartBadge" class="chart-badge">Historical</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">Punti Visualizzati</label>
+                            <div class="control-buttons">
+                                <button class="btn-control-small" onclick="changeWindowSize(500)">500</button>
+                                <button class="btn-control-small active" onclick="changeWindowSize(1000)">1k</button>
+                                <button class="btn-control-small" onclick="changeWindowSize(2500)">2.5k</button>
+                                <button class="btn-control-small" onclick="changeWindowSize(5000)">5k</button>
+                                <button class="btn-control-small" onclick="changeWindowSize(10000)">10k</button>
+                                <button class="btn-control-small" onclick="changeWindowSize(-1)">Tutto</button>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label">Navigazione</label>
+                            <div class="control-buttons">
+                                <button class="btn-nav" onclick="navigateData('start')" title="Vai all'inizio">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                                    </svg>
+                                </button>
+                                <button class="btn-nav" onclick="navigateData('prev')" title="Indietro">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 18l-6-6 6-6"/>
+                                    </svg>
+                                </button>
+                                <span class="nav-indicator" id="navIndicator">0 - 0</span>
+                                <button class="btn-nav" onclick="navigateData('next')" title="Avanti">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18l6-6-6-6"/>
+                                    </svg>
+                                </button>
+                                <button class="btn-nav" onclick="navigateData('end')" title="Vai alla fine">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group" style="flex: 1;">
+                            <label class="control-label">Posizione (scorri per navigare)</label>
+                            <input type="range" id="dataSlider" class="data-slider" min="0" max="100" value="0" oninput="sliderNavigation(this.value)">
+                        </div>
+                    </div>
+                    
+                    <div id="historyChart" style="height: 450px;"></div>
+                </div>
+            </div>
+
+            <div id="emptyHistoryState" class="empty-state">
+                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <h3 style="margin-bottom: 0.5rem;">Nessun Dato Selezionato</h3>
+                <p>Seleziona una data e una sessione per visualizzare i dati storici</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA ANOMALIE -->
+    <div id="anomaliesView" class="anomalies-view">
+        <div class="dashboard-container">
+            <button class="back-button" onclick="showHomeMenu()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Torna al Menu
+            </button>
+
+            <!-- Summary Cards -->
+            <div class="anomaly-summary-grid">
+                <div class="summary-card">
+                    <div class="summary-icon ecg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                    </div>
+                    <div class="summary-value" id="totalEcgAnomalies">0</div>
+                    <div class="summary-label">Anomalie ECG Totali</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon piezo">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <div class="summary-value" id="totalPiezoAnomalies">0</div>
+                    <div class="summary-label">Anomalie PIEZO Totali</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon temp">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                        </svg>
+                    </div>
+                    <div class="summary-value" id="totalTempAnomalies">0</div>
+                    <div class="summary-label">Anomalie TEMP Totali</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon total">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="summary-value" id="totalAllAnomalies">0</div>
+                    <div class="summary-label">Anomalie Totali</div>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="anomaly-filter-panel">
+                <h4>Filtra Anomalie</h4>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Data</label>
+                        <select id="anomalyDateSelect" class="form-select">
+                            <option value="">Caricamento...</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Tipo Segnale</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" onclick="filterAnomalies('all')">Tutti</button>
+                            <button class="filter-btn" onclick="filterAnomalies('ecg')">ECG</button>
+                            <button class="filter-btn" onclick="filterAnomalies('piezo')">PIEZO</button>
+                            <button class="filter-btn" onclick="filterAnomalies('temp')">TEMP</button>
+                        </div>
+                    </div>
+                    <button class="btn-export" onclick="exportAnomalies()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Esporta JSON
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected Date Stats -->
+            <div id="selectedDateStats" class="selected-date-stats">
+                <div class="date-stat-card ecg">
+                    <div class="stat-value" id="dateEcgCount">0</div>
+                    <div class="stat-label">ECG nella data</div>
+                </div>
+                <div class="date-stat-card piezo">
+                    <div class="stat-value" id="datePiezoCount">0</div>
+                    <div class="stat-label">PIEZO nella data</div>
+                </div>
+                <div class="date-stat-card temp">
+                    <div class="stat-value" id="dateTempCount">0</div>
+                    <div class="stat-label">TEMP nella data</div>
+                </div>
+                <div class="date-stat-card total">
+                    <div class="stat-value" id="dateTotalCount">0</div>
+                    <div class="stat-label">Totale nella data</div>
+                </div>
+            </div>
+
+            <!-- Anomalies List -->
+            <div id="anomaliesListContainer" class="anomalies-list-container">
+                <div id="anomaliesList" class="anomalies-list"></div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyAnomaliesState" class="empty-state">
+                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <h3 style="margin-bottom: 0.5rem;">Nessuna Anomalia Selezionata</h3>
+                <p>Seleziona una data per visualizzare le anomalie rilevate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFERMA RESET -->
+    <div id="resetModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3 class="modal-title">Conferma Reset</h3>
+            </div>
+            <div class="modal-body">
+                Sei sicuro di voler resettare tutti i grafici e i contatori? Questa azione non può essere annullata.
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-modal-cancel" onclick="closeResetModal()">Annulla</button>
+                <button class="btn-modal btn-modal-confirm" onclick="confirmReset()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MESSAGE MODAL -->
+    <div id="messageModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <h3 class="modal-title">Messaggio</h3>
+            </div>
+            <div class="modal-body">
+                <p id="messageModalText">Messaggio</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-modal-confirm" onclick="closeMessageModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA MODALITÀ ESPERTA (Placeholder) -->
+    <div id="expertView" class="expert-view">
+        <div class="dashboard-container">
+            <div class="view-header">
+                <h1>🔬 Modalità Esperta</h1>
+                <p class="view-subtitle">Analisi avanzata e configurazioni dettagliate</p>
+            </div>
+            <div class="placeholder-content">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6"/>
+                    <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"/>
+                    <path d="M1 12h6m6 0h6"/>
+                    <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24"/>
+                </svg>
+                <h3>Funzionalità in Sviluppo</h3>
+                <p>La modalità esperta sarà implementata prossimamente</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA IMPOSTAZIONI -->
+    <div id="settingsView" class="settings-view">
+        <div class="dashboard-container">
+            <h2 class="section-title">Impostazioni</h2>
+            <p class="section-subtitle">Configura le porte seriali USB per l'acquisizione dati</p>
+
+            <!-- USB Ports Configuration Panel -->
+            <div class="settings-panel">
+                <h4>Configurazione Porte Seriali</h4>
+                <p class="info-text">
+                    Seleziona le porte USB per comunicare con il dispositivo IIT. 
+                    Le porte disponibili vengono rilevate automaticamente.
+                </p>
+                
+                <div class="ports-grid">
+                    <!-- Shell Port -->
+                    <div class="port-group">
+                        <label>Shell Port</label>
+                        <select id="shellPortSelect" class="port-select">
+                            <option value="">Caricamento porte...</option>
+                        </select>
+                        <small class="port-info">Porta per comandi shell e controllo dispositivo</small>
+                    </div>
+
+                    <!-- Data Port -->
+                    <div class="port-group">
+                        <label>Data Port</label>
+                        <select id="dataPortSelect" class="port-select">
+                            <option value="">Caricamento porte...</option>
+                        </select>
+                        <small class="port-info">Porta per ricezione dati (ECG, PIEZO, TEMP)</small>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="settings-actions">
+                    <button id="refreshPortsBtn" class="btn-refresh">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        Rileva Porte USB
+                    </button>
+                    
+                    <button id="saveConfigBtn" class="btn-save-config">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Salva Configurazione
+                    </button>
+                </div>
+
+                <!-- Result Message -->
+                <div id="settingsResult" class="settings-result" style="display: none;"></div>
+
+                <!-- Warning Box -->
+                <div class="warning-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <div>
+                        <strong>Nota Importante:</strong> Dopo aver salvato la configurazione, 
+                        è necessario riavviare manualmente IITdata_acq.py per applicare le nuove porte USB.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Configuration Display -->
+            <div class="settings-panel">
+                <h4>Configurazione Attuale</h4>
+                <div class="current-config">
+                    <div class="config-row">
+                        <div class="config-item">
+                            <span class="config-label">Shell Port:</span>
+                            <code class="config-value" id="currentShellPort">-</code>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-label">Data Port:</span>
+                            <code class="config-value" id="currentDataPort">-</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA SIMULA ANOMALIA -->
+    <div id="simulateAnomalyView" class="simulate-anomaly-view">
+        <div class="dashboard-container">
+            <h2 class="section-title">⚠️ Simula Anomalia</h2>
+            <p class="section-subtitle">Genera anomalie sintetiche per testare il sistema di rilevamento</p>
+
+            <!-- Anomaly Type Selection -->
+            <div class="simulate-panel">
+                <h4>Tipo di Anomalia</h4>
+                <div class="anomaly-type-selector">
+                    <button class="type-btn active" data-type="ecg" onclick="selectAnomalyType('ecg')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                        <span>ECG</span>
+                    </button>
+                    <button class="type-btn" data-type="piezo" onclick="selectAnomalyType('piezo')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>PIEZO</span>
+                    </button>
+                    <button class="type-btn" data-type="temp" onclick="selectAnomalyType('temp')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                        </svg>
+                        <span>TEMP</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ECG/PIEZO Parameters -->
+            <div id="ecgPiezoParams" class="simulate-panel">
+                <h4>Parametri Anomalia</h4>
+                <div class="param-grid">
+                    <div class="param-group">
+                        <label>Errore di Ricostruzione</label>
+                        <input type="number" id="reconstructionError" step="0.0001" min="0" placeholder="Auto (casuale sopra soglia)">
+                        <small>Lascia vuoto per valore casuale realistico</small>
+                    </div>
+                    <div class="param-group">
+                        <label>Soglia</label>
+                        <input type="number" id="threshold" step="0.01" min="0" value="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TEMP Parameters -->
+            <div id="tempParams" class="simulate-panel" style="display: none;">
+                <h4>Parametri Temperatura</h4>
+                
+                <div class="param-group">
+                    <label>Tipo di Anomalia</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="tempType" value="hypothermia" checked onchange="validateTemperature()">
+                            <span>Ipotermia (soglia: 35°C)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="tempType" value="hyperthermia" onchange="validateTemperature()">
+                            <span>Ipertermia (soglia: 37.5°C)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="param-grid">
+                    <div class="param-group">
+                        <label>Temperatura (°C)</label>
+                        <input type="number" id="temperature" step="0.1" min="0" max="50" value="22.0" required oninput="validateTemperature()">
+                        <small id="tempValidationMessage" class="validation-message"></small>
+                    </div>
+                    <div class="param-group">
+                        <label>Durata (minuti - multipli di 2)</label>
+                        <input type="number" id="durationMinutes" min="2" max="60" step="2" value="10">
+                        <small>Inserire multipli di 2 (es: 2, 4, 6, 8, 10...)</small>
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label>Severità</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="severity" value="auto" checked>
+                            <span>Auto (calcolata da temperatura)</span>
+                        </label>
+                        <label class="radio-label severity-mild-label">
+                            <input type="radio" name="severity" value="mild">
+                            <span>Lieve</span>
+                        </label>
+                        <label class="radio-label severity-moderate-label">
+                            <input type="radio" name="severity" value="moderate">
+                            <span>Moderata</span>
+                        </label>
+                        <label class="radio-label severity-severe-label">
+                            <input type="radio" name="severity" value="severe">
+                            <span>Grave</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="simulate-actions">
+                <button class="btn-simulate" onclick="generateAnomaly()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    Genera Anomalia
+                </button>
+                <button class="btn-cancel" onclick="showRealtimeView()">Annulla</button>
+            </div>
+
+            <!-- Result Message -->
+            <div id="simulateResult" class="simulate-result" style="display: none;"></div>
+        </div>
+    </div>
+
+<!-- VISTA VISUALIZZA MODELLI -->
+<div id="modelsView" class="models-view">
+    <div class="dashboard-container">
+        <h2 class="section-title">Gestione Modelli ML</h2>
+        <p class="section-subtitle">Seleziona modello e configura soglia di rilevamento</p>
+
+        <!-- Tabs per ECG / PIEZO -->
+        <div class="models-tabs">
+            <button class="models-tab active" data-type="ecg" onclick="switchModelType('ecg')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                Modelli ECG
+            </button>
+            <button class="models-tab" data-type="piezo" onclick="switchModelType('piezo')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                Modelli PIEZO
+            </button>
+        </div>
+
+        <!-- Contenuto Tab -->
+        <div class="models-content">
+            <!-- Lista Modelli con Radio Buttons -->
+            <div class="models-list" id="modelsList">
+                <!-- I modelli verranno inseriti qui -->
+            </div>
+
+            <!-- Configurazione Soglia -->
+            <div class="threshold-config-panel">
+                <h4>Configurazione Soglia</h4>
+                <div class="threshold-controls">
+                    <label>Soglia di Rilevamento</label>
+                    <div class="threshold-slider-group">
+                        <input type="range" id="modelThresholdSlider" min="0.01" max="0.5" step="0.01" value="0.1" disabled>
+                        <span class="threshold-display" id="modelThresholdDisplay">0.10</span>
+                    </div>
+                    <p class="threshold-info">Soglia più bassa = maggiore sensibilità (più anomalie rilevate)</p>
+                </div>
+                
+                <button class="btn-apply-model" id="btnApplyModel" onclick="applyModelSelection()" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Applica Configurazione
+                </button>
+
+                <div class="model-warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <p>Sarà necessario riavviare lo script di acquisizione per applicare le modifiche</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dettagli Modello -->
+<div id="modelDetailsModal" class="modal-overlay" onclick="if(event.target === this) closeModelDetails()">
+    <div class="model-details-content">
+        <div class="model-details-header">
+            <h3 id="modelDetailsTitle">Dettagli Modello</h3>
+            <button class="modal-close-btn" onclick="closeModelDetails()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="model-details-body">
+            <div id="modelImagesGallery" class="model-images-gallery">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Caricamento immagini...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- VISTA MODALITÀ DEBUG -->
+    <div id="debugView" class="debug-view">
+        <div class="dashboard-container">
+            <h2 class="section-title">Modalità Debug</h2>
+            <p class="section-subtitle">Console di sistema in tempo reale con log di MQTT, Dashboard, Anomalie e Serial</p>
+
+            <!-- Filters Panel -->
+            <div class="debug-panel">
+                <h4>Filtri Log</h4>
+                <div class="debug-filters">
+                    <div class="filter-group">
+                        <label>Categoria</label>
+                        <select id="debugCategoryFilter" class="debug-select" onchange="applyDebugFilters()">
+                            <option value="">Tutte le categorie</option>
+                            <option value="MQTT">MQTT</option>
+                            <option value="Dashboard">Dashboard</option>
+                            <option value="ECG Anomaly">ECG Anomaly</option>
+                            <option value="PIEZO Anomaly">PIEZO Anomaly</option>
+                            <option value="TEMP Anomaly">TEMP Anomaly</option>
+                            <option value="Serial">Serial</option>
+                            <option value="Config">Config</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Livello</label>
+                        <select id="debugLevelFilter" class="debug-select" onchange="applyDebugFilters()">
+                            <option value="">Tutti i livelli</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="DEBUG">DEBUG</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button class="btn-debug-refresh" onclick="loadDebugLogs()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                            Aggiorna
+                        </button>
+                        <button class="btn-debug-export" onclick="exportDebugLogs()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Esporta JSON
+                        </button>
+                        <button class="btn-debug-clear" onclick="clearDebugConsole()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Cancella
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Console Log Panel -->
+            <div class="debug-panel">
+                <h4>Console Log <span id="debugLogCount" class="log-count">(0 entries)</span></h4>
+                <div class="debug-console" id="debugConsole">
+                    <div class="console-line info">[INFO] Debug mode initialized - waiting for logs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA GESTIONE UTENTI -->
+    <div id="userManagementView" class="user-management-view">
+        <h2 style="margin-bottom:2rem;font-size:1.75rem">Gestione Utenti</h2>
+        <div id="userManagementResult" style="display:none;padding:1rem;border-radius:8px;margin-bottom:1.5rem"></div>
+        <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;overflow:hidden">
+            <table style="width:100%;border-collapse:collapse">
+                <thead style="background:var(--bg-secondary)">
+                    <tr>
+                        <th style="padding:1rem;text-align:left;font-size:.75rem;text-transform:uppercase">ID</th>
+                        <th style="padding:1rem;text-align:left;font-size:.75rem;text-transform:uppercase">Username</th>
+                        <th style="padding:1rem;text-align:left;font-size:.75rem;text-transform:uppercase">Nome</th>
+                        <th style="padding:1rem;text-align:left;font-size:.75rem;text-transform:uppercase">Ruolo</th>
+                        <th style="padding:1rem;text-align:left;font-size:.75rem;text-transform:uppercase">Ultimo Accesso</th>
+                        <th style="padding:1rem;text-align:right;font-size:.75rem;text-transform:uppercase">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="6" style="text-align:center;padding:2rem">Caricamento...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="editUserModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
+        <div style="background:var(--card-bg);border-radius:12px;padding:2rem;max-width:500px;width:90%">
+            <h3 style="margin:0 0 1.5rem 0">Modifica Utente</h3>
+            <input type="hidden" id="editUserId">
+            <div style="margin-bottom:1rem">
+                <label style="display:block;margin-bottom:.5rem;font-weight:600">Nome</label>
+                <input type="text" id="editNome" style="width:100%;padding:.75rem;border-radius:6px;border:1px solid var(--card-border);background:var(--bg-secondary);color:var(--text-primary)">
+            </div>
+            <div style="margin-bottom:1rem">
+                <label style="display:block;margin-bottom:.5rem;font-weight:600">Cognome</label>
+                <input type="text" id="editCognome" style="width:100%;padding:.75rem;border-radius:6px;border:1px solid var(--card-border);background:var(--bg-secondary);color:var(--text-primary)">
+            </div>
+            <div style="margin-bottom:1rem">
+                <label style="display:block;margin-bottom:.5rem;font-weight:600">Ruolo</label>
+                <select id="editRuolo" style="width:100%;padding:.75rem;border-radius:6px;border:1px solid var(--card-border);background:var(--bg-secondary);color:var(--text-primary)">
+                    <option value="paziente">Paziente</option>
+                    <option value="medico">Medico</option>
+                    <option value="admin">Amministratore</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1.5rem">
+                <label style="display:block;margin-bottom:.5rem;font-weight:600">Nuova Password</label>
+                <input type="password" id="editPassword" placeholder="Lascia vuoto per non modificare" style="width:100%;padding:.75rem;border-radius:6px;border:1px solid var(--card-border);background:var(--bg-secondary);color:var(--text-primary)">
+            </div>
+            <div style="display:flex;gap:1rem;justify-content:flex-end">
+                <button onclick="closeEditModal()" style="padding:.75rem 1.5rem;border-radius:8px;border:1px solid var(--card-border);background:transparent;color:var(--text-primary);cursor:pointer">Annulla</button>
+                <button id="saveUserEditBtn" onclick="saveUserEdit()" style="padding:.75rem 1.5rem;border-radius:8px;border:none;background:#3b82f6;color:#fff;cursor:pointer">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    </div> <!-- Close main-content -->
+    <footer class="footer-logos">
+        <img src="{{ url_for('static', filename='274709107_319618396869775_4698964766748562013_n-Photoroom.png') }}" alt="Logo 1">
+        <img src="{{ url_for('static', filename='ida_logo_news.png') }}" alt="Logo 2">
+        <img src="{{ url_for('static', filename='IIT-v4-logo-small.png') }}" alt="Logo 3">
+    </footer>
+    <!-- JavaScript separato -->
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/anomalies.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/models.js') }}"></script>
+
+    <script>
+        // ========== AUTHENTICATION ==========
+        let currentUser = null;
+        
+        function checkAuth() {
+            const token = localStorage.getItem('session_token');
+            const userData = localStorage.getItem('user');
+            if (!token || !userData) {
+                window.location.href = '/login';
+                return false;
+            }
+            try {
+                currentUser = JSON.parse(userData);
+                applyPermissions(currentUser.ruolo);
+                updateUserInfo(currentUser);
+                return true;
+            } catch (e) {
+                window.location.href = '/login';
+                return false;
+            }
+        }
+        
+        function applyPermissions(ruolo) {
+            const expertSection = document.getElementById('expertModeSection');
+            const menuModels = document.getElementById('menuModels');
+            const menuSimulate = document.getElementById('menuSimulate');
+            const menuDebug = document.getElementById('menuDebug');
+            const menuUsers = document.getElementById('menuUsers');
+            
+            if (ruolo === 'paziente') {
+                if (expertSection) expertSection.style.display = 'none';
+            } else if (ruolo === 'medico') {
+                if (expertSection) expertSection.style.display = 'flex';
+                if (menuModels) menuModels.style.display = 'flex';
+                if (menuSimulate) menuSimulate.style.display = 'none';
+                if (menuDebug) menuDebug.style.display = 'none';
+                if (menuUsers) menuUsers.style.display = 'none';
+            } else if (ruolo === 'admin') {
+                if (expertSection) expertSection.style.display = 'flex';
+                if (menuModels) menuModels.style.display = 'flex';
+                if (menuSimulate) menuSimulate.style.display = 'flex';
+                if (menuDebug) menuDebug.style.display = 'flex';
+                if (menuUsers) menuUsers.style.display = 'flex';
+            }
+        }
+        
+        function updateUserInfo(user) {
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+            const userAvatarEl = document.getElementById('userAvatar');
+            if (userNameEl) userNameEl.textContent = user.nome + ' ' + user.cognome;
+            if (userRoleEl) userRoleEl.textContent = user.ruolo;
+            if (userAvatarEl) {
+                const initials = (user.nome[0] + user.cognome[0]).toUpperCase();
+                userAvatarEl.textContent = initials;
+            }
+        }
+        
+        async function logout() {
+            const token = localStorage.getItem('session_token');
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+            } catch (e) {}
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        
+        checkAuth();
+        
+        // ========== USER MANAGEMENT ==========
+        let allUsers = [];
+
+        function showUserManagement() {
+            console.log('[UserManagement] showUserManagement called');
+            document.querySelectorAll('.realtime-view, .history-view, .anomalies-view, .debug-view, .models-view, .settings-view, .user-management-view, .simulate-anomaly-view, .expert-view').forEach(view => {
+                view.classList.remove('active');
+            });
+            const view = document.getElementById('userManagementView');
+            if (view) {
+                view.classList.add('active');
+                console.log('[UserManagement] View activated');
+            }
+            if (typeof updateSidebarActive === 'function') updateSidebarActive('user-management');
+            loadUsers();
+        }
+
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('session_token');
+                const response = await fetch('/api/users/list', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    allUsers = data.users;
+                    renderUsersTable();
+                } else {
+                    showUserError(data.error || 'Errore caricamento utenti');
+                }
+            } catch (error) {
+                console.error('[UserManagement] Error:', error);
+                showUserError('Errore di connessione');
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            if (allUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Nessun utente</td></tr>';
+                return;
+            }
+            const roleColors = { 'paziente': '#10b981', 'medico': '#3b82f6', 'admin': '#ef4444' };
+            tbody.innerHTML = allUsers.map(user => {
+                const roleColor = roleColors[user.ruolo] || '#94a3b8';
+                const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString('it-IT') : 'Mai';
+                return `<tr style="border-bottom: 1px solid var(--card-border);">
+                    <td style="padding: 1rem;">${user.id}</td>
+                    <td style="padding: 1rem;"><strong>${user.username}</strong></td>
+                    <td style="padding: 1rem;">${user.nome} ${user.cognome}</td>
+                    <td style="padding: 1rem;"><span style="background: ${roleColor}20; color: ${roleColor}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">${user.ruolo}</span></td>
+                    <td style="padding: 1rem;">${lastLogin}</td>
+                    <td style="padding: 1rem; text-align: right;">
+                        <button onclick="editUser(${user.id})" style="padding: 0.5rem; margin-right: 0.5rem; border: 1px solid #3b82f6; background: rgba(59,130,246,0.1); color: #3b82f6; border-radius: 6px; cursor: pointer;">✏️</button>
+                        <button onclick="deleteUser(${user.id}, '${user.username}')" style="padding: 0.5rem; border: 1px solid #ef4444; background: rgba(239,68,68,0.1); color: #ef4444; border-radius: 6px; cursor: pointer;">🗑️</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function editUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editNome').value = user.nome;
+            document.getElementById('editCognome').value = user.cognome;
+            document.getElementById('editRuolo').value = user.ruolo;
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editUserModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        async function saveUserEdit() {
+            const userId = document.getElementById('editUserId').value;
+            const nome = document.getElementById('editNome').value;
+            const cognome = document.getElementById('editCognome').value;
+            const ruolo = document.getElementById('editRuolo').value;
+            const password = document.getElementById('editPassword').value;
+            const token = localStorage.getItem('session_token');
+            const saveBtn = document.getElementById('saveUserEditBtn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Salvataggio...';
+            try {
+                const payload = { nome, cognome, ruolo };
+                if (password) payload.new_password = password;
+                const response = await fetch('/api/users/' + userId, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showUserSuccess('Utente aggiornato');
+                    closeEditModal();
+                    loadUsers();
+                } else {
+                    showUserError(data.error || 'Errore aggiornamento');
+                }
+            } catch (error) {
+                showUserError('Errore di connessione');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Salva';
+            }
+        }
+
+        function deleteUser(userId, username) {
+            if (!confirm('Eliminare ' + username + '?')) return;
+            const token = localStorage.getItem('session_token');
+            fetch('/api/users/' + userId, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showUserSuccess('Utente eliminato');
+                    loadUsers();
+                } else {
+                    showUserError(data.error || 'Errore eliminazione');
+                }
+            })
+            .catch(() => showUserError('Errore di connessione'));
+        }
+
+        function showUserSuccess(msg) {
+            const div = document.getElementById('userManagementResult');
+            if (div) {
+                div.style.background = 'rgba(16, 185, 129, 0.1)';
+                div.style.color = '#10b981';
+                div.style.border = '1px solid #10b981';
+                div.textContent = msg;
+                div.style.display = 'block';
+                setTimeout(() => div.style.display = 'none', 5000);
+            }
+        }
+
+        function showUserError(msg) {
+            const div = document.getElementById('userManagementResult');
+            if (div) {
+                div.style.background = 'rgba(239, 68, 68, 0.1)';
+                div.style.color = '#ef4444';
+                div.style.border = '1px solid #ef4444';
+                div.textContent = msg;
+                div.style.display = 'block';
+                setTimeout(() => div.style.display = 'none', 5000);
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('editUserModal');
+            if (modal && e.target === modal) closeEditModal();
+        });
+    </script>
+    
+    <script>
+        // Override TUTTE le funzioni di navigazione per nascondere user-management-view
+        window.addEventListener('load', function() {
+            const viewSelector = '.realtime-view, .history-view, .anomalies-view, .debug-view, .models-view, .settings-view, .user-management-view, .simulate-anomaly-view, .expert-view';
+            
+            // Salvo originali
+            const originalShowRealtimeView = window.showRealtimeView;
+            const originalShowHistoryView = window.showHistoryView;
+            const originalShowAnomaliesView = window.showAnomaliesView;
+            const originalShowSettings = window.showSettings;
+            
+            // Override
+            window.showRealtimeView = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                document.getElementById('realtimeView').classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('realtime');
+                setTimeout(() => {
+                    if (typeof Plotly !== 'undefined') {
+                        Plotly.Plots.resize('ecgChart');
+                        Plotly.Plots.resize('adcChart');
+                        Plotly.Plots.resize('tempChart');
+                    }
+                }, 100);
+            };
+            
+            window.showHistoryView = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                document.getElementById('historyView').classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('history');
+                if (typeof loadAvailableDates === 'function') loadAvailableDates();
+            };
+            
+            window.showAnomaliesView = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                document.getElementById('anomaliesView').classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('anomalies');
+                if (typeof loadAnomalyDates === 'function') loadAnomalyDates();
+                if (typeof loadAnomalySummary === 'function') loadAnomalySummary();
+            };
+            
+            window.showSettings = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                document.getElementById('settingsView').classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('settings');
+                setTimeout(() => {
+                    const refreshBtn = document.getElementById('refreshPortsBtn');
+                    const saveBtn = document.getElementById('saveConfigBtn');
+                    if (refreshBtn && typeof refreshSerialPorts === 'function') refreshBtn.onclick = refreshSerialPorts;
+                    if (saveBtn && typeof saveConfiguration === 'function') saveBtn.onclick = saveConfiguration;
+                }, 100);
+            };
+            
+            window.showModelsView = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                document.getElementById('modelsView').classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('models');
+                if (typeof loadModelsList === 'function') loadModelsList();
+            };
+            
+            window.showDebugMode = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                document.getElementById('debugView').classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('debug');
+                if (typeof startLogWatcher === 'function') startLogWatcher();
+            };
+            
+            window.showSimulateAnomaly = function() {
+                document.querySelectorAll(viewSelector).forEach(v => v.classList.remove('active'));
+                const view = document.getElementById('simulateAnomalyView');
+                if (view) view.classList.add('active');
+                if (typeof updateSidebarActive === 'function') updateSidebarActive('simulate');
+            };
+            
+            console.log('[Navigation Override] All functions updated');
+        });
+    </script>
+    
+    <script>
+        window.addEventListener('load', function() {
+            const originalShowModelsView = window.showModelsView;
+            
+            window.showModelsView = function() {
+                console.log('[Fix] showModelsView called');
+                
+                // Call original if it exists
+                if (originalShowModelsView) {
+                    originalShowModelsView();
+                } else {
+                    // Fallback implementation
+                    document.querySelectorAll('.realtime-view, .history-view, .anomalies-view, .expert-view, .settings-view, .simulate-anomaly-view, .debug-view, .models-view, .user-management-view').forEach(view => {
+                        view.classList.remove('active');
+                    });
+                    document.getElementById('modelsView').classList.add('active');
+                    if (typeof updateSidebarActive === 'function') {
+                        updateSidebarActive('models');
+                    }
+                }
+                
+                // FORCE load models immediately
+                if (typeof loadModels === 'function') {
+                    console.log('[Fix] Calling loadModels(ecg)');
+                    setTimeout(() => loadModels('ecg'), 100);
+                } else {
+                    console.error('[Fix] loadModels function not found!');
+                }
+            };
+            
+            console.log('[Fix] showModelsView override installed');
+        });
+    </script>
+
+</body>
+</html>

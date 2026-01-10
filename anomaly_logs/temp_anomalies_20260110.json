@@ -1,0 +1,42 @@
+[
+  {
+    "timestamp": "2026-01-10T12:45:48.375720",
+    "date": "2026-01-10",
+    "time": "12:45:48",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-10T12:45:59.873717",
+    "date": "2026-01-10",
+    "time": "12:45:59",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-10T12:45:59.972863",
+    "date": "2026-01-10",
+    "time": "12:45:59",
+    "anomaly_type": "hypothermia",
+    "temperature": 22.0,
+    "threshold": 35,
+    "duration_readings": 5,
+    "severity": "severe"
+  },
+  {
+    "timestamp": "2026-01-10T13:06:51.371326",
+    "date": "2026-01-10",
+    "time": "13:06:51",
+    "anomaly_type": "hypothermia",
+    "temperature": 17.8,
+    "threshold": 35.0,
+    "duration_readings": 11,
+    "severity": "severe"
+  }
+]
